@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Debugger Tool</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f9;
+        color: #333;
+      }
+
+      h2 {
+        text-align: center;
+        margin: 20px 0;
+        color: #444;
+      }
+
+      .marquee {
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        box-sizing: border-box;
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px 0;
+        font-size: 18px;
+      }
+
+      .marquee span {
+        display: inline-block;
+        padding-left: 100%;
+        animation: marquee 30s linear infinite;
+      }
+
+      @keyframes marquee {
+        50% {
+          transform: translateX(100%);
+        }
+        50% {
+          transform: translateX(-100%);
+        }
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        padding: 0 20px;
+      }
+
+      #debugger,
+      #questions {
+        flex: 1;
+        min-width: 300px;
+        max-width: 48%;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .textarea-container {
+        position: relative;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        font-size: 16px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        resize: none;
+        font-family: "Courier New", monospace;
+        background-color: #f8f8f8;
+        transition: border-color 0.3s;
+      }
+
+      .copy-icon,
+      .paste-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        margin: 5px;
+      }
+
+      textarea:focus {
+        border-color: #007bff;
+        outline: none;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 15px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: #fff;
+        transition: background-color 0.3s, border-color 0.3s;
+      }
+
+      input:focus,
+      select:focus,
+      button:focus {
+        border-color: #0056b3;
+        outline: none;
+      }
+
+      select:hover,
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .success-output {
+        color: green;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+      }
+
+      .error-output {
+        color: red;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+      }
+
+      .output-section {
+        margin-top: 20px;
+        position: relative;
+      }
+
+      .confirmation {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        color: red;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 20px;
+        border-radius: 5px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .blur-background {
+        filter: blur(5px);
+      }
+
+      .confirmation p {
+        margin: 0;
+        padding-bottom: 10px;
+      }
+
+      .confirmation-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      ul {
+        padding-left: 20px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      #output {
+        margin-top: 20px;
+        overflow: auto;
+      }
+
+      .spinner {
+        margin: 20px auto;
+        width: 40px;
+        height: 40px;
+        border: 5px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 5px solid #007bff;
+        animation: spin 0.5s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+          padding: 0 10px;
+        }
+
+        #debugger,
+        #questions {
+          max-width: 100%;
+        }
+
+        textarea {
+          height: 150px;
+        }
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+      }
+
+      #user-input {
+        width: 100%;
+        color: black;
+        height: 40px; /* Adjust height for user input area */
+        font-size: 16px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f8f8f8;
+        font-family: "Courier New", monospace;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+      }
+
+      #user-input:focus {
+        border-color: #007bff;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Code Debugger Tool</h2>
+
+    <div class="marquee">
+      <span>Questions will be dynamically generated based on your code</span>
+    </div>
+
+    <div class="container" id="main-container">
+      <div id="debugger">
+        <div class="textarea-container">
+          <textarea
+            id="code"
+            placeholder="Enter your code here..."
+            oninput="autoResize(this)"
+          ></textarea>
+          <i class="fas fa-paste paste-icon" id="pasteCodeBtn" onclick="pasteText('code')"></i>
+        </div>
+        <select id="language">
+          <option value="python">Python</option>
+          <option value="cpp">C++</option>
+          <!-- <option value="java">Java</option> -->
+          <option value="c">C</option>
+        </select>
+        <input
+          type="text"
+          id="user-input"
+          placeholder="Enter your input here (if applicable)"
+        />
+        <div class="button-group">
+          <button id="runCodeBtn" onclick="debugCode()">
+            <span id="buttonText">Run Code</span>
+          </button>
+          <button id="autoCorrectBtn" style="display:none;" onclick="autoCorrectCode()">
+            <span id="autoCorrectText">Correct Code</span>
+          </button>
+        </div>
+        <div id="output"></div>
+        <div class="output-section">
+          <strong>Corrected Code:</strong>
+          <div class="textarea-container">
+            <pre id="corrected-code"></pre>
+            <i class="fas fa-copy copy-icon" id="copyCorrectedCodeBtn" onclick="copyText('corrected-code')" style="display: none;"></i>
+          </div>
+        </div>
+      </div>
+
+      <div id="questions">
+        <strong>Generated Questions:</strong>
+        <div class="spinner" id="spinner" style="display: none"></div>
+        <ul id="questions-list">
+      </div>
+    </div>
+
+    <div class="confirmation" id="confirmation" style="display: none;">
+      <p>Your code is wrong. Do you want the correct code?</p>
+      <div class="confirmation-buttons">
+        <button onclick="getCorrectCode()">Yes</button>
+        <button onclick="dismissConfirmation()">No</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auto-resize textarea based on input content
+    function autoResize(textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+
+    async function debugCode() {
+      const code = document.getElementById("code").value;
+      const language = document.getElementById("language").value;
+      const userInput = document.getElementById("user-input").value;
+      const outputDiv = document.getElementById("output");
+      const questionsDiv = document.getElementById("questions-list");
+      const spinner = document.getElementById("spinner");
+      const button = document.getElementById("runCodeBtn");
+      const buttonText = document.getElementById("buttonText");
+      const autoCorrectBtn = document.getElementById("autoCorrectBtn");
+
+      outputDiv.innerHTML = "Your output will be displayed here";
+      questionsDiv.innerHTML = "";
+      spinner.style.display = "block";
+      buttonText.innerHTML = "Running";
+      autoCorrectBtn.style.display = "none";
+
+      const response = await fetch("http://127.0.0.1:5000/debug", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, language, user_input: userInput }),
+      });
+
+      const result = await response.json();
+
+      if (result.output) {
+        outputDiv.innerHTML = `<pre class="success-output">${result.output}</pre>`;
+      } else if (result.error) {
+        document.getElementById("main-container").classList.add("blur-background");
+        document.getElementById("confirmation").style.display = "flex";
+        outputDiv.innerHTML = `<pre class="error-output">${result.error}</pre>`;
+      }
+
+      // Display Generated Questions
+      if (result.questions) {
+        questionsDiv.innerHTML = result.questions
+          .map((q) => `<li>${q}</li>`)
+          .join("");
+      } else {
+        questionsDiv.innerHTML = "<li>No questions generated</li>";
+      }
+
+      spinner.style.display = "none";
+
+      // Disable button to prevent multiple clicks
+      button.disabled = true;
+
+      try {
+        // Simulate code execution delay (replace with actual execution logic)
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // After execution, restore the button text
+        buttonText.innerHTML = "Run Code";
+      } catch (error) {
+        buttonText.innerHTML = "Run Code";
+      }
+
+      // Re-enable button after execution
+      button.disabled = false;
+    }
+
+    async function autoCorrectCode() {
+      const code = document.getElementById("code").value;
+      const correctedCodeDiv = document.getElementById("corrected-code");
+      const autoCorrectText = document.getElementById("autoCorrectText");
+      autoCorrectText.innerHTML = "Correcting";
+
+      const response = await fetch("http://127.0.0.1:5000/autocorrect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: code }),
+      });
+
+      const result = await response.json();
+
+      if (result.corrected_code) {
+        correctedCodeDiv.innerHTML = result.corrected_code;
+        autoResize(correctedCodeDiv); // Auto resize after correction
+        document.getElementById("copyCorrectedCodeBtn").style.display = "block";
+      } else {
+        correctedCodeDiv.innerHTML = "No correction available.";
+      }
+
+      // After correction, restore the button text
+      autoCorrectText.innerHTML = "Auto Correct";
+    }
+
+    function copyText(elementId) {
+      const element = document.getElementById(elementId);
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.execCommand('copy');
+      const copyBtn = document.getElementById('copyCorrectedCodeBtn');
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+      }, 2000);
+    }
+
+    function pasteText(elementId) {
+      const element = document.getElementById(elementId);
+      navigator.clipboard.readText().then(text => {
+        element.value = text;
+        autoResize(element); // Auto resize after pasting
+      });
+    }
+
+    function getCorrectCode() {
+      document.getElementById("autoCorrectBtn").style.display = "block";
+      document.getElementById("autoCorrectBtn").style.backgroundColor = "green";
+      document.getElementById("autoCorrectBtn").disabled = false;
+      document.getElementById("main-container").classList.remove("blur-background");
+      document.getElementById("confirmation").style.display = "none";
+    }
+
+    function dismissConfirmation() {
+      document.getElementById("main-container").classList.remove("blur-background");
+      document.getElementById("confirmation").style.display = "none";
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+import subprocess
+import tempfile
+import os
+import google.generativeai as genai
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)  # Enable CORS for frontend communication
+
+# Set up Gemini API key
+GEMINI_API_KEY = "AIzaSyDjAf4HDz1L1YhtZk-vl1aHeQ8mTLoAEoA"  # Replace with your actual API key
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Route to debug code and generate questions
+@app.route('/debug', methods=['POST'])
+def debug_code():
+    data = request.get_json()
+    code = data.get('code')
+    language = data.get('language')
+    user_input = data.get('user_input', "")
+
+    if not code or not language:
+        return jsonify({"error": "Code or language missing"}), 400
+    
+    # Execute the code
+    output_response = execute_code(code, language, user_input)
+
+    # Generate questions using Gemini
+    questions = generate_questions(code)
+
+    return jsonify({
+        "output": output_response.get("output", ""),
+        "error": output_response.get("error", ""),
+        "questions": questions
+    })
+
+# Route to auto-correct code
+@app.route('/autocorrect', methods=['POST'])
+def auto_correct_code():
+    data = request.get_json()
+    code = data.get('code')
+
+    if not code:
+        return jsonify({"error": "Code missing"}), 400
+
+    # Auto-correct the code using Gemini
+    corrected_code = correct_code_using_gemini(code)
+
+    return jsonify({
+        "corrected_code": corrected_code
+    })
+
+# Function to execute code based on language
+def execute_code(code, language, user_input=""):
+    try:
+        with tempfile.NamedTemporaryFile(suffix=f'.{language}', delete=False) as temp_file:
+            temp_file.write(code.encode())
+            temp_file.close()
+
+            print(f"Temporary file created: {temp_file.name}")
+
+            if language == "python":
+                result = subprocess.run(['python', temp_file.name], input=user_input, capture_output=True, text=True)
+            elif language == "cpp":
+                exe_file = temp_file.name.replace('.cpp', '.exe')
+                compile_result = subprocess.run(['g++', temp_file.name, '-o', exe_file], capture_output=True, text=True)
+                if compile_result.returncode != 0:
+                    return {"error": compile_result.stderr}
+                result = subprocess.run([exe_file], input=user_input, capture_output=True, text=True)
+            elif language == "java":
+                class_name = extract_java_class_name(code)
+                if not class_name:
+                    return {"error": "No public class found in Java code."}
+                
+                temp_dir = os.path.dirname(temp_file.name)
+                java_file_name = f"{temp_dir}/{class_name}.java"
+                
+                print(f"Java file path: {java_file_name}")
+
+                if os.path.exists(java_file_name):
+                    os.remove(java_file_name)
+                
+                os.rename(temp_file.name, java_file_name)
+
+                if not os.path.exists(java_file_name):
+                    return {"error": "Renaming failed"}
+
+                compile_result = subprocess.run(['javac', java_file_name], capture_output=True, text=True)
+                if compile_result.returncode != 0:
+                    return {"error": compile_result.stderr}
+
+                result = subprocess.run(['java', '-cp', temp_dir, class_name], input=user_input, capture_output=True, text=True)
+
+                if os.path.exists(java_file_name):
+                    os.remove(java_file_name)
+            elif language == "c":
+                exe_file = temp_file.name.replace('.c', '.exe')
+                compile_result = subprocess.run(['gcc', temp_file.name, '-o', exe_file], capture_output=True, text=True)
+                if compile_result.returncode != 0:
+                    return {"error": compile_result.stderr}
+                result = subprocess.run([exe_file], input=user_input, capture_output=True, text=True)
+            else:
+                return {"error": "Unsupported language"}
+
+            os.remove(temp_file.name)
+            return {"output": result.stdout if result.returncode == 0 else "", "error": result.stderr if result.returncode != 0 else ""}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Function to auto-correct code using Gemini
+def correct_code_using_gemini(code):
+    try:
+        prompt = f"Correct the following code:\n\n{code}"
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        corrected_code = response.text.strip()
+        return corrected_code
+    except Exception as e:
+        return code  # Return original code if there is an error
+
+# Extract Java class name
+def extract_java_class_name(code):
+    for line in code.split("\n"):
+        if "public class" in line:
+            return line.split()[2].strip()
+    return None
+
+# Function to generate 5 questions using Gemini API
+def generate_questions(code):
+    try:
+        prompt = f"Analyze the following code and generate 5 conceptual or practical questions:\n\n{code}"
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        return response.text.split("\n")[:5]  # Extract first 5 questions
+    except Exception as e:
+        return [f"Error generating questions: {str(e)}"]
+
+# Run Flask app
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+
+
+    import subprocess
+import tempfile
+
+def debug_code(code):
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".c", delete=False) as temp_file:
+            temp_file.write(code.encode())
+            temp_file_path = temp_file.name
+
+        compile_command = f"g++ {temp_file_path} -o temp_output.exe"
+        exec_command = "temp_output.exe"
+
+        compile_process = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+        if compile_process.returncode != 0:
+            return compile_process.stderr
+
+        exec_process = subprocess.run(exec_command, shell=True, capture_output=True, text=True)
+        return exec_process.stdout or exec_process.stderr
+    except Exception as e:
+        return str(e)
+
+
+
+
+
+
+        import subprocess
+import tempfile
+
+def debug_code(code):
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".cpp", delete=False) as temp_file:
+            temp_file.write(code.encode())
+            temp_file_path = temp_file.name
+
+        compile_command = f"g++ {temp_file_path} -o temp_output.exe"
+        exec_command = "temp_output.exe"
+
+        compile_process = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+        if compile_process.returncode != 0:
+            return compile_process.stderr
+
+        exec_process = subprocess.run(exec_command, shell=True, capture_output=True, text=True)
+        return exec_process.stdout or exec_process.stderr
+    except Exception as e:
+        return str(e)
+
+
+
+
+
+        import subprocess
+import tempfile
+import os
+
+def debug_code(code):
+    try:
+        # Clean up any old temp files or compiled class files before starting
+        cleanup_temp_files()
+
+        # Create a temporary Java file and write code to it
+        with tempfile.NamedTemporaryFile(suffix=".java", delete=False) as temp_file:
+            temp_file.write(code.encode())
+            temp_file_path = temp_file.name
+
+        # Extract the class name from the Java code
+        class_name = extract_java_class_name(code)
+        if not class_name:
+            return "Class name not found in the Java code."
+
+        # Define the renamed file path
+        renamed_file_path = os.path.join(os.path.dirname(temp_file_path), f"{class_name}.java")
+        
+        # Rename the temporary file to match the class name (without .java)
+        os.rename(temp_file_path, renamed_file_path)
+
+        # Ensure the file exists before attempting to compile
+        if not os.path.exists(renamed_file_path):
+            return f"Error: The file {renamed_file_path} does not exist."
+
+        # Compile the Java code
+        compile_command = f"javac {renamed_file_path}"
+        compile_process = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+        if compile_process.returncode != 0:
+            return compile_process.stderr
+
+        # Run the Java code (without .java extension)
+        exec_command = f"java -cp {os.path.dirname(renamed_file_path)} {class_name}"
+        exec_process = subprocess.run(exec_command, shell=True, capture_output=True, text=True)
+
+        # Clean up the temporary files after execution
+        cleanup_temp_files()  # Clean-up all temp and compiled files
+
+        # Return the output or error from the execution
+        return exec_process.stdout or exec_process.stderr
+    except Exception as e:
+        return str(e)
+
+def extract_java_class_name(code):
+    for line in code.split("\n"):
+        if "public class" in line:
+            return line.split()[2].strip()
+    return None
+
+def cleanup_temp_files():
+    """
+    Clean up old temporary files and compiled Java class files.
+    """
+    # Check if there are old files in the system's temp directory and remove them
+    temp_dir = os.path.join(os.getenv("TEMP"), "tmp")  # Temporary directory
+    if os.path.exists(temp_dir):
+        # List all files in temp directory and remove the Java and class files
+        for filename in os.listdir(temp_dir):
+            if filename.endswith(".java") or filename.endswith(".class"):
+                try:
+                    os.remove(os.path.join(temp_dir, filename))
+                except Exception as e:
+                    print(f"Error deleting file {filename}: {e}")
+    else:
+        print("No temporary directory found to clean.")
+
+
+
+
+        import subprocess
+import tempfile
+
+def debug_code(code):
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_file:
+            temp_file.write(code.encode())
+            temp_file_path = temp_file.name
+
+        exec_process = subprocess.run(f"python {temp_file_path}", shell=True, capture_output=True, text=True)
+        return exec_process.stdout or exec_process.stderr
+    except Exception as e:
+        return str(e)
